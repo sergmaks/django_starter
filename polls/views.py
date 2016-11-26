@@ -2,6 +2,7 @@ from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render
 from django.core.urlresolvers import reverse
 from django.views import generic
+from django.utils import timezone
 
 from .models import Choice, Question
 
@@ -12,14 +13,22 @@ class IndexView(generic.ListView):
     context_object_name = 'latest_question_list'
 
     def get_queryset(self):
-        """Return the last five published questions."""
-        return Question.objects.order_by('-pub_date')[:5]
+        """возвращает набор данных, содержащий те вопросы,
+        у которых pub_date меньше или равна timezone.now."""
+        return Question.objects.filter(
+            pub_date__lte=timezone.now()
+        ).order_by('-pub_date')[:5]
 
 
 # Представление для страницы определенного вопроса
 class DetailView(generic.DetailView):
     model = Question
     template_name = 'polls/detail.html'
+    def get_queryset(self):
+        """
+        Исключает вопросы, которые ще не опубликованы.
+        """
+        return Question.objects.filter(pub_date__lte=timezone.now())
 
 # Представление отображения результатов голосования
 class ResultsView(generic.DetailView):
